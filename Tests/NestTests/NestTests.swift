@@ -1,4 +1,5 @@
 import Testing
+import UIKit
 import Foundation
 @testable import Nest
 
@@ -48,5 +49,74 @@ private func performCURDTest(using nest: Nest) async throws {
     try await nest.deleteAsset(assetIdentifier: .id(asset.id))
     await #expect(throws: NestError.assetNotFound) {
         try await nest.fetchAsset(assetIdentifier: .id(asset.id))
+    }
+}
+
+@Test func testImageCURD() async throws {
+    // Test with Nest.Mock
+    try await performImageCURDTest(using: Nest.mock)
+
+    // Test with Nest.localShared
+    try await performImageCURDTest(using: Nest.localShared)
+}
+
+// Helper function to perform CURD test for images
+private func performImageCURDTest(using nest: Nest) async throws {
+    func generateTestImage(size: CGSize = CGSize(width: 10, height: 10), color: UIColor = .blue) -> UIImage {
+        UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
+        defer { UIGraphicsEndImageContext() }
+        color.setFill()
+        UIRectFill(CGRect(origin: .zero, size: size))
+        return UIGraphicsGetImageFromCurrentImageContext()!
+    }
+
+    let image = generateTestImage()
+    let format = ImageFormat.png
+
+    // Create: Save the image
+    let imageAsset = try await nest.create(image: image, format: format)
+
+    // Read: Fetch the image and verify it
+    let fetchedImage = try await nest.readImage(assetIdentifier: .id(imageAsset.id))
+    #expect(fetchedImage != nil)
+    #expect(ImageComparator.compareImages(fetchedImage, image))
+
+    // Update: Modify the image and re-save
+    let updatedImage = generateTestImage(size: CGSize(width: 20, height: 20), color: .red)
+    try await nest.update(assetIdentifier: .id(imageAsset.id), image: updatedImage, format: .png)
+    let updatedFetchedImage = try await nest.readImage(assetIdentifier: .id(imageAsset.id))
+    #expect(updatedFetchedImage != nil)
+    #expect(ImageComparator.compareImages(updatedFetchedImage, updatedImage))
+
+    // Delete: Remove the image and verify deletion
+    try await nest.deleteImage(assetIdentifier: .id(imageAsset.id))
+    await #expect(throws: NestError.assetNotFound) {
+        try await nest.readImage(assetIdentifier: .id(imageAsset.id))
+    }
+}
+
+private class ImageComparator {
+    /// Redraws an image using UIImageRenderer to normalize its representation
+    static func normalizeImage(_ image: UIImage) -> UIImage? {
+        let renderSize = image.size
+        let renderer = UIGraphicsImageRenderer(size: renderSize)
+        return renderer.image { context in
+            // Fill with clear color first to ensure consistent background
+            UIColor.clear.setFill()
+            context.fill(CGRect(origin: .zero, size: renderSize))
+            // Draw the image
+            image.draw(in: CGRect(origin: .zero, size: renderSize))
+        }
+    }
+
+    /// Compares two images by normalizing them first and then comparing their PNG data
+    static func compareImages(_ image1: UIImage, _ image2: UIImage) -> Bool {
+        guard let normalizedImage1 = normalizeImage(image1),
+              let normalizedImage2 = normalizeImage(image2),
+              let data1 = normalizedImage1.pngData(),
+              let data2 = normalizedImage2.pngData() else {
+            return false
+        }
+        return data1 == data2
     }
 }
