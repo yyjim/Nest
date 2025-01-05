@@ -13,7 +13,7 @@ extension Nest {
     ///   - image: The `UIImage` to save.
     ///   - format: The desired image format.
     /// - Throws: An error if the operation fails.
-    public func write(image: UIImage, format: ImageFormat) async throws -> NEAsset{
+    public func create(image: UIImage, format: ImageFormat) async throws -> NEAsset{
         guard let imageData = format.data(from: image) else {
             throw NestError.unableToConvertToData
         }
@@ -24,34 +24,45 @@ extension Nest {
         )
     }
 
+    /// Updates an existing asset's image with the specified format.
+    /// - Parameters:
+    ///   - image: The new `UIImage` to save.
+    ///   - format: The desired image format.
+    ///   - id: The unique identifier of the asset to update.
+    /// - Throws:
+    ///   - `NestError.unableToConvertToData` if the image cannot be converted to data.
+    ///   - `NestError.assetNotFound` if the asset does not exist.
+    ///   - Other errors if the operation fails.
+    public func update(assetIdentifier: AssetIdentifier, image: UIImage, format: ImageFormat) async throws {
+        // Convert the image to the specified format
+        guard let imageData = format.data(from: image) else {
+            throw NestError.unableToConvertToData
+        }
+
+        // Update the asset with the new data and metadata
+        try await updateAsset(
+            assetIdentifier: assetIdentifier,
+            data: imageData,
+            metadata: ["format": .string(format.fileExtension)]
+        )
+    }
+
     /// Reads a `UIImage` by its unique identifier.
     /// - Parameter id: The unique identifier of the image.
     /// - Returns: The `UIImage` if found.
     /// - Throws: An error if the operation fails or the image cannot be decoded.
-    public func readImage(byId id: String) async throws -> UIImage {
-        let imageData = try await fetchAssetData(byId: id)
+    public func readImage(assetIdentifier: AssetIdentifier) async throws -> UIImage {
+        let imageData = try await fetchAssetData(assetIdentifier: assetIdentifier)
         guard let image = UIImage(data: imageData) else {
             throw NestError.failedToReadData(underlyingError: nil)
         }
         return image
     }
 
-    /// Reads a `UIImage` by its assetURL.
-    /// - Parameter assetURL: The assetURL of the image.
-    /// - Returns: The `UIImage` if found.
-    /// - Throws: An error if the operation fails or the image cannot be decoded.
-    public func readImage(byAssetURL assetURL: URL) async throws -> UIImage {
-        guard let uniqueID = NestAsset.identifier(from: assetURL) else {
-            throw NestError.invalidAssetURL
-        }
-        let image = try await readImage(byId: uniqueID)
-        return image
-    }
-
     /// Deletes an image by its unique identifier.
     /// - Parameter id: The unique identifier of the image to delete.
     /// - Throws: An error if the operation fails.
-    public func deleteImage(byId id: String) async throws {
-        try await deleteAsset(byId: id)
+    public func deleteImage(assetIdentifier: AssetIdentifier) async throws {
+        try await deleteAsset(assetIdentifier: assetIdentifier)
     }
 }

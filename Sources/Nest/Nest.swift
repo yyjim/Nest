@@ -11,6 +11,23 @@ public class Nest: @unchecked Sendable {
     private let storage: NestStorage
     private let database: NestDatabase
 
+    public enum AssetIdentifier {
+        case id(String)
+        case assetURL(URL)
+
+        func identifier() throws -> String {
+            switch self {
+            case let .id(id):
+                return id
+            case let .assetURL(url):
+                guard let id = NEAsset.identifier(from: url) else {
+                    throw NestError.invalidAssetURL
+                }
+                return id
+            }
+        }
+    }
+
     /// Shared instance using `LocalStorage` and CoreData.
     public static let localShared: Nest = {
         let storage = LocalStorage(directory: .documents)
@@ -60,11 +77,11 @@ public class Nest: @unchecked Sendable {
     ///   - metadata: Additional metadata to update the asset with (optional).
     /// - Throws: `NestError.assetNotFound` if the asset does not exist.
     public func updateAsset(
-        byId id: String,
+        assetIdentifier: AssetIdentifier,
         data: Data,
         metadata: [String: MetadataValue]? = nil
     ) async throws {
-        let existingAsset = try await fetchAsset(byId: id)
+        let existingAsset = try await fetchAsset(assetIdentifier: assetIdentifier)
         let updatedAsset = NEAsset(
             id: existingAsset.id,
             type: existingAsset.type,
@@ -94,23 +111,25 @@ public class Nest: @unchecked Sendable {
 
     /// Deletes an asset, including its data and metadata.
     /// - Parameter id: The unique identifier of the asset to delete.
-    public func deleteAsset(byId id: String) async throws {
+    public func deleteAsset(assetIdentifier: AssetIdentifier) async throws {
         // Fetch the asset metadata from the database
-        guard let asset = try database.fetch(byId: id) else {
+        let identifier = try assetIdentifier.identifier()
+        guard let asset = try database.fetch(byId: identifier) else {
             throw NestError.assetNotFound
         }
         // Delete the file from storage
         try await storage.deleteData(forAsset: asset)
         // Remove the metadata from the database
-        try database.delete(byId: id)
+        try database.delete(byId: identifier)
     }
 
     /// Fetches an asset's metadata.
     /// - Parameter id: The unique identifier of the asset to fetch.
     /// - Returns: The asset metadata (`NEAsset`) if it exists in the database.
     /// - Throws: `NestError.assetNotFound` if the asset metadata is not found in the database.
-    public func fetchAsset(byId id: String) async throws -> NEAsset {
-        guard let asset = try database.fetch(byId: id) else {
+    public func fetchAsset(assetIdentifier: AssetIdentifier) async throws -> NEAsset {
+        let identifier = try assetIdentifier.identifier()
+        guard let asset = try database.fetch(byId: identifier) else {
             throw NestError.assetNotFound
         }
         return asset
@@ -120,8 +139,8 @@ public class Nest: @unchecked Sendable {
     /// - Parameter id: The unique identifier of the asset whose data is to be fetched.
     /// - Returns: The binary data (`Data`) associated with the asset stored in the storage.
     /// - Throws: `NestError.dataNotFound` if the asset metadata or binary data is not found.
-    public func fetchAssetData(byId id: String) async throws -> Data {
-        let asset = try await fetchAsset(byId: id)
+    public func fetchAssetData(assetIdentifier: AssetIdentifier) async throws -> Data {
+        let asset = try await fetchAsset(assetIdentifier: assetIdentifier)
         return try await storage.readData(forAsset: asset)
     }
 
@@ -140,35 +159,5 @@ public class Nest: @unchecked Sendable {
     /// - Returns: An array of matching `NEAsset` objects.
     public func fetchAssets(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NEAsset] {
         try database.fetch(limit: limit, offset: offset, filters: filters)
-    }
-}
-
-extension Nest {
-    /// Updates an existing asset's data and metadata using its unique URL.
-    /// - Parameters:
-    ///   - assetURL: The unique URL of the asset to update.
-    ///   - data: The binary data to associate with the asset.
-    ///   - metadata: Optional metadata to update the asset with. If `nil`, the existing metadata remains unchanged.
-    /// - Throws:
-    ///   - `NestError.assetNotFound` if the asset URL is invalid or the asset does not exist.
-    ///   - Other errors that may occur during the update process.
-    public func updateAsset(
-        byAssetURL assetURL: URL,
-        data: Data,
-        metadata: [String: MetadataValue]? = nil
-    ) async throws {
-        guard let identifier = NEAsset.identifier(from: assetURL) else {
-            throw NestError.assetNotFound
-        }
-        try await updateAsset(byId: identifier, data: data, metadata: metadata)
-    }
-
-    /// Deletes an asset, including its data and metadata.
-    /// - Parameter assetURL: The unique url of the asset to delete.
-    public func deleteAsset(byAssetURL assetURL: URL) async throws {
-        guard let identifier = NEAsset.identifier(from: assetURL) else {
-            throw NestError.assetNotFound
-        }
-        try await deleteAsset(byId: identifier)
     }
 }

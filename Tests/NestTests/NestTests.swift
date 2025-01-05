@@ -28,8 +28,8 @@ private func performCURDTest(using nest: Nest) async throws {
     let asset = try await nest.createAsset(data: data, type: .photo, metadata: metadata)
 
     // Read: Fetch the asset and verify the data
-    let fetchedAsset = try await nest.fetchAsset(byId: asset.id)
-    let fetchedData = try await nest.fetchAssetData(byId: asset.id)
+    let fetchedAsset = try await nest.fetchAsset(assetIdentifier: .id(asset.id))
+    let fetchedData = try await nest.fetchAssetData(assetIdentifier: .id(asset.id))
     #expect(fetchedAsset.id == asset.id)
     #expect(fetchedAsset.metadata == metadata)
     #expect(fetchedData == data)
@@ -37,16 +37,16 @@ private func performCURDTest(using nest: Nest) async throws {
     // Update: Modify the asset metadata and re-save
     let updatedData = Data(repeating: 0, count: 512)
     let updatedMetadata: [String: MetadataValue] = ["format": .string("jpeg")]
-    try await nest.updateAsset(byId: asset.id, data: updatedData, metadata: updatedMetadata)
-    let updatedFetchedAsset = try await nest.fetchAsset(byId: asset.id)
-    let updatedFetchedData = try await nest.fetchAssetData(byId: asset.id)
+    try await nest.updateAsset(assetIdentifier: .id(asset.id), data: updatedData, metadata: updatedMetadata)
+    let updatedFetchedAsset = try await nest.fetchAsset(assetIdentifier: .id(asset.id))
+    let updatedFetchedData = try await nest.fetchAssetData(assetIdentifier: .id(asset.id))
     #expect(updatedFetchedAsset.id == asset.id)
     #expect(updatedFetchedAsset.metadata == updatedMetadata)
     #expect(updatedFetchedData == updatedData)
 
     // Delete: Remove the asset and verify deletion
-    try await nest.deleteAsset(byId: asset.id)
+    try await nest.deleteAsset(assetIdentifier: .id(asset.id))
     await #expect(throws: NestError.assetNotFound) {
-        try await nest.fetchAsset(byId: asset.id)
+        try await nest.fetchAsset(assetIdentifier: .id(asset.id))
     }
 }
