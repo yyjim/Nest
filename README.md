@@ -36,7 +36,7 @@ https://github.com/yyjim/Nest
 Nest provides a convenient shared instance that uses `LocalStorage` for file management and `CoreData` for asset metadata management:
 
 ```swift
-let nest = Nest.localShared
+let nest = AssetsNest.sharedLocal
 ```
 
 **Custom Initialization**
@@ -48,7 +48,7 @@ If you want to use a custom storage or database implementation, you can initiali
 let customStorage: NestStorage = CustomNestStorage()
 let customDatabase: NestDatabase = CustomNestDatabase()
 
-let nest = Nest(storage: customStorage, database: customDatabase)
+let nest = AssetsNest(storage: customStorage, database: customDatabase)
 ````
 
 ## Asset Management
