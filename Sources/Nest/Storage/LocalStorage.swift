@@ -83,13 +83,15 @@ public class LocalStorage: NestStorage {
 
     public func deleteAll() async throws {
         let directoryURL = baseDirectory
-        return try await Task.detached {
-            do {
-                try FileManager.default.removeItem(at: directoryURL)
-            } catch {
-                throw NestError.failedToDeleteData(underlyingError: error)
-            }
-        }.value
+        do {
+            try await Task.detached {
+                if FileManager.default.fileExists(atPath: directoryURL.path) {
+                    try FileManager.default.removeItem(at: directoryURL)
+                }
+            }.value
+        } catch {
+            throw NestError.failedToDeleteData(underlyingError: error)
+        }
     }
 
     // MARK: - Helper Methods
