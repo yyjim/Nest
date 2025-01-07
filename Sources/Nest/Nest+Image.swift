@@ -13,15 +13,16 @@ extension Nest {
     ///   - image: The `UIImage` to save.
     ///   - format: The desired image format.
     /// - Throws: An error if the operation fails.
-    public func create(image: UIImage, format: ImageFormat) async throws -> NEAsset{
+    public func create(
+        image: UIImage,
+        format: ImageFormat,
+        type: NEAssetType = .photo,
+        metadata: [String: MetadataValue]? = nil
+    ) async throws -> NEAsset{
         guard let imageData = format.data(from: image) else {
             throw NestError.unableToConvertToData
         }
-        return try await createAsset(
-            data: imageData,
-            type: .photo,
-            metadata: ["format": .string(format.fileExtension)]
-        )
+        return try await createAsset(data: imageData, type: type, metadata: metadata)
     }
 
     /// Updates an existing asset's image with the specified format.
@@ -33,17 +34,23 @@ extension Nest {
     ///   - `NestError.unableToConvertToData` if the image cannot be converted to data.
     ///   - `NestError.assetNotFound` if the asset does not exist.
     ///   - Other errors if the operation fails.
-    public func update(assetIdentifier: AssetIdentifier, image: UIImage, format: ImageFormat) async throws {
+    public func update(
+        assetIdentifier: AssetIdentifier,
+        image: UIImage,
+        format: ImageFormat,
+        type: NEAssetType? = nil,
+        metadata: [String: MetadataValue]? = nil
+    ) async throws {
         // Convert the image to the specified format
         guard let imageData = format.data(from: image) else {
             throw NestError.unableToConvertToData
         }
-
         // Update the asset with the new data and metadata
         try await updateAsset(
             assetIdentifier: assetIdentifier,
             data: imageData,
-            metadata: ["format": .string(format.fileExtension)]
+            type: type,
+            metadata: metadata
         )
     }
 

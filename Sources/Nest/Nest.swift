@@ -79,12 +79,13 @@ public class Nest: @unchecked Sendable {
     public func updateAsset(
         assetIdentifier: AssetIdentifier,
         data: Data,
+        type: NEAssetType? = nil,
         metadata: [String: MetadataValue]? = nil
     ) async throws {
         let existingAsset = try await fetchAsset(assetIdentifier: assetIdentifier)
         let updatedAsset = NEAsset(
             id: existingAsset.id,
-            type: existingAsset.type,
+            type: type ?? existingAsset.type,
             createdAt: existingAsset.createdAt,
             modifiedAt: .now,
             fileSize: data.count,
