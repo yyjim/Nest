@@ -15,7 +15,7 @@ extension AssetsNest {
 func testFetchAssets() async throws {
     let nest = AssetsNest.sharedLocal
     try await nest.deleteAllAssets()
-    #expect(try! nest.fetchAllAssets().isEmpty)
+    #expect(try! await nest.fetchAllAssets().isEmpty)
 
     // Helper function to create assets
     func createDummyAssets(type: NEAssetType, count: Int) async throws {
@@ -31,10 +31,10 @@ func testFetchAssets() async throws {
     try await createDummyAssets(type: .custom("sticker"), count: 5)
 
     // Validate asset counts
-    #expect(try! nest.fetchAllAssets(type: .photo).count == 20)
-    #expect(try! nest.fetchAllAssets(type: .video).count == 10)
-    #expect(try! nest.fetchAllAssets(type: .custom("sticker")).count == 5)
-    #expect(try! nest.fetchAllAssets().count == 20 + 10 + 5)
+    #expect(try! await nest.fetchAllAssets(type: .photo).count == 20)
+    #expect(try! await nest.fetchAllAssets(type: .video).count == 10)
+    #expect(try! await nest.fetchAllAssets(type: .custom("sticker")).count == 5)
+    #expect(try! await nest.fetchAllAssets().count == 20 + 10 + 5)
 }
 
 @Test func testAssetsNestCURD() async throws {
@@ -49,7 +49,7 @@ func testFetchAssets() async throws {
 // Helper function to perform CURD test
 private func performCURDTest(using nest: AssetsNest) async throws {
     try await nest.deleteAllAssets()
-    #expect(try! nest.fetchAllAssets().count == 0)
+    #expect(try! await nest.fetchAllAssets().count == 0)
 
     let data = Data(repeating: 0, count: 1024)
     let metadata: [String: MetadataValue] = ["format": .string("png")]
