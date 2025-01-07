@@ -11,8 +11,34 @@ extension Nest {
     }()
 }
 
+@Test
+func testFetchAssets() async throws {
+    let nest = Nest.localShared
+    try await nest.deleteAllAssets()
+    #expect(try! nest.fetchAllAssets().isEmpty)
+
+    // Helper function to create assets
+    func createDummyAssets(type: NEAssetType, count: Int) async throws {
+        let data = Data(repeating: 0, count: 1)
+        for _ in 1...count {
+            try await nest.createAsset(data: data, type: type, metadata: nil)
+        }
+    }
+
+    // Create assets
+    try await createDummyAssets(type: .photo, count: 20)
+    try await createDummyAssets(type: .video, count: 10)
+    try await createDummyAssets(type: .custom("sticker"), count: 5)
+
+    // Validate asset counts
+    #expect(try! nest.fetchAllAssets(type: .photo).count == 20)
+    #expect(try! nest.fetchAllAssets(type: .video).count == 10)
+    #expect(try! nest.fetchAllAssets(type: .custom("sticker")).count == 5)
+    #expect(try! nest.fetchAllAssets().count == 20 + 10 + 5)
+}
+
 @Test func testNestCURD() async throws {
-    // NOTE: The @Test(arguments: [Nest.localShared, Nest.mock ]) doesn't work, so we have to test them separately
+    // NOTE: The @Test(arguments: [Nest.localShared, Nest.mock]) doesn't work, so we have to test them separately
     // Test with Nest.Mock
     try await performCURDTest(using: Nest.mock)
 
@@ -22,6 +48,9 @@ extension Nest {
 
 // Helper function to perform CURD test
 private func performCURDTest(using nest: Nest) async throws {
+    try await nest.deleteAllAssets()
+    #expect(try! nest.fetchAllAssets().count == 0)
+
     let data = Data(repeating: 0, count: 1024)
     let metadata: [String: MetadataValue] = ["format": .string("png")]
 

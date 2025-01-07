@@ -58,6 +58,7 @@ class CoreDataAssetDatabase: NestDatabase {
             return
         }
         context.delete(coreDataAsset)
+        try context.save()
     }
 
     func fetchAll(filters: [QueryFilter]) throws -> [NEAsset] {
@@ -72,6 +73,13 @@ class CoreDataAssetDatabase: NestDatabase {
         request.fetchOffset = offset
         request.predicate = createCompoundPredicate(from: filters)
         return try context.fetch(request).map { $0.toNEAsset() }
+    }
+
+    func deleteAll() async throws {
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Asset")
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        try context.execute(deleteRequest)
+        try context.save()
     }
 
     private func createCompoundPredicate(from filters: [QueryFilter]) -> NSPredicate? {

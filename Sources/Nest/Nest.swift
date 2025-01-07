@@ -51,12 +51,12 @@ public class Nest: @unchecked Sendable {
     ///   - metadata: Additional metadata to associate with the asset (optional).
     /// - Returns: The newly created `NEAsset`.
     /// - Throws: `NestError.assetAlreadyExists` if a conflict occurs during asset creation.
+    @discardableResult
     public func createAsset(
         data: Data,
         type: NEAssetType,
         metadata: [String: MetadataValue]? = nil
     ) async throws -> NEAsset {
-        // Create the new asset
         let asset = NEAsset(
             id: UUID().uuidString,
             type: type,
@@ -65,7 +65,6 @@ public class Nest: @unchecked Sendable {
             fileSize: data.count,
             metadata: metadata
         )
-
         try await saveAsset(asset, data: data, isNew: true)
         return asset
     }
@@ -124,6 +123,12 @@ public class Nest: @unchecked Sendable {
         try database.delete(byId: identifier)
     }
 
+    // Delete all assets from the database. Currently intended for internal use only.
+    func deleteAllAssets() async throws {
+        try await database.deleteAll()
+        try await storage.deleteAll()
+    }
+
     /// Fetches an asset's metadata.
     /// - Parameter id: The unique identifier of the asset to fetch.
     /// - Returns: The asset metadata (`NEAsset`) if it exists in the database.
@@ -152,6 +157,11 @@ public class Nest: @unchecked Sendable {
         try database.fetchAll(filters: filters)
     }
 
+    // Fetches all `NEAsset` objects with the given type.
+    public func fetchAllAssets(type: NestAssetType? = nil) throws -> [NEAsset] {
+        try database.fetchAll(type: type)
+    }
+
     /// Fetches assets with pagination and filters.
     /// - Parameters:
     ///   - limit: The maximum number of assets to fetch.
@@ -160,5 +170,10 @@ public class Nest: @unchecked Sendable {
     /// - Returns: An array of matching `NEAsset` objects.
     public func fetchAssets(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NEAsset] {
         try database.fetch(limit: limit, offset: offset, filters: filters)
+    }
+
+    // Fetches `NEAsset` objects with pagination for given type.
+    public func fetchAssets(limit: Int, offset: Int, type: NEAssetType) throws -> [NEAsset] {
+        try database.fetch(limit: limit, offset: offset, type: type)
     }
 }

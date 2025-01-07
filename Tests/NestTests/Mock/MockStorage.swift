@@ -29,4 +29,8 @@ final class MockStorage: NestStorage {
     func dataExists(forAsset asset: NestAsset) async -> Bool {
         return savedData[asset.id] != nil
     }
+
+    func deleteAll() async throws {
+        savedData.removeAll()
+    }
 }

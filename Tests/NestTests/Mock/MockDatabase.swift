@@ -45,4 +45,8 @@ final class MockDatabase: NestDatabase {
     func fetch(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NestAsset] {
         Array(assets[offset..<(offset + limit)])
     }
+
+    func deleteAll() throws {
+        storedAssets = [:]
+    }
 }
