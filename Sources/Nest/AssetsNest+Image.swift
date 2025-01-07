@@ -54,12 +54,28 @@ extension AssetsNest {
         )
     }
 
+    /// Updates an existing asset's image with the specified format
+    public func update(asset: NEAsset, image: UIImage, format: ImageFormat) async throws {
+        // Convert the image to the specified format
+        guard let imageData = format.data(from: image) else {
+            throw NestError.unableToConvertToData
+        }
+        // Update the asset with the new data and metadata
+        try await updateAsset(asset: asset, data: imageData)
+    }
+
     /// Reads a `UIImage` by its unique identifier.
     /// - Parameter id: The unique identifier of the image.
     /// - Returns: The `UIImage` if found.
     /// - Throws: An error if the operation fails or the image cannot be decoded.
     public func readImage(assetIdentifier: AssetIdentifier) async throws -> UIImage {
-        let imageData = try await fetchAssetData(assetIdentifier: assetIdentifier)
+        let asset = try await fetchAsset(assetIdentifier: assetIdentifier)
+        return try await readImage(asset: asset)
+    }
+
+    /// Reads a `UIImage` by NEAsset.
+    public func readImage(asset: NEAsset) async throws -> UIImage {
+        let imageData = try await fetchAssetData(asset: asset)
         guard let image = UIImage(data: imageData) else {
             throw NestError.failedToReadData(underlyingError: nil)
         }
@@ -71,5 +87,10 @@ extension AssetsNest {
     /// - Throws: An error if the operation fails.
     public func deleteImage(assetIdentifier: AssetIdentifier) async throws {
         try await deleteAsset(assetIdentifier: assetIdentifier)
+    }
+
+    /// Deletes an image by NEAsset.
+    public func deleteImage(asset: NEAsset) async throws {
+        try await deleteAsset(asset: asset)
     }
 }
