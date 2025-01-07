@@ -74,17 +74,34 @@ private func performImageCURDTest(using nest: Nest) async throws {
     let format = ImageFormat.png
 
     // Create: Save the image
-    let imageAsset = try await nest.create(image: image, format: format)
+    let imageAsset = try await nest.create(
+        image: image,
+        format: format,
+        type: .custom("image"),
+        metadata: ["tag": .string("image")]
+    )
 
     // Read: Fetch the image and verify it
+    let fetchedImageAsset = try await nest.fetchAsset(assetIdentifier: .id(imageAsset.id))
     let fetchedImage = try await nest.readImage(assetIdentifier: .id(imageAsset.id))
+    #expect(fetchedImageAsset.type == .custom("image"))
+    #expect(fetchedImageAsset.metadata ==  ["tag": .string("image")])
     #expect(fetchedImage != nil)
     #expect(ImageComparator.compareImages(fetchedImage, image))
 
     // Update: Modify the image and re-save
     let updatedImage = generateTestImage(size: CGSize(width: 20, height: 20), color: .red)
-    try await nest.update(assetIdentifier: .id(imageAsset.id), image: updatedImage, format: .png)
+    try await nest.update(
+        assetIdentifier: .id(imageAsset.id),
+        image: updatedImage,
+        format: .png,
+        type: .custom("sticker"),
+        metadata: ["tag": .string("sticker")]
+    )
+    let updatedImageAsset = try await nest.fetchAsset(assetIdentifier: .id(imageAsset.id))
     let updatedFetchedImage = try await nest.readImage(assetIdentifier: .id(imageAsset.id))
+    #expect(updatedImageAsset.type == .custom("sticker"))
+    #expect(updatedImageAsset.metadata == ["tag": .string("sticker")])
     #expect(updatedFetchedImage != nil)
     #expect(ImageComparator.compareImages(updatedFetchedImage, updatedImage))
 
