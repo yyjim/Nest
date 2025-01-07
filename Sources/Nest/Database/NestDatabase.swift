@@ -6,11 +6,11 @@
 //
 
 public struct QueryFilter {
-    let field: String
-    let value: Any
-    let comparison: ComparisonType
+    public let field: String
+    public let value: Any
+    public let comparison: ComparisonType
 
-    enum ComparisonType {
+    public enum ComparisonType {
         case equal
         case lessThan
         case greaterThan
@@ -41,6 +41,9 @@ public protocol NestDatabase {
     /// - Returns: An array of matching `NEAsset` objects.
     func fetchAll(filters: [QueryFilter]) throws -> [NEAsset]
 
+    // Fetches all `NEAsset` objects with the given type.
+    func fetchAll(type: NEAssetType?) throws -> [NEAsset]
+
     /// Fetches `NEAsset` objects with pagination and filters.
     /// - Parameters:
     ///   - limit: The maximum number of entities to fetch.
@@ -48,4 +51,33 @@ public protocol NestDatabase {
     ///   - filters: Filters to apply for querying.
     /// - Returns: An array of matching `NEAsset` objects.
     func fetch(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NEAsset]
+
+    // Fetches `NEAsset` objects with pagination for given type.
+    func fetch(limit: Int, offset: Int, type: NEAssetType?) throws -> [NEAsset]
+
+    // Delete all
+    func deleteAll() async throws
+}
+
+extension NestDatabase {
+    public func fetchAll() throws -> [NEAsset] {
+        try fetchAll(type: nil)
+    }
+
+    public func fetch(limit: Int, offset: Int) throws -> [NEAsset] {
+        try fetch(limit: limit, offset: offset, type: nil)
+    }
+
+    func fetch(limit: Int, offset: Int, type: NEAssetType?) throws -> [NEAsset] {
+        try fetch(limit: limit, offset: offset, filters: createQueryFilters(type: type) ?? [])
+    }
+
+    func fetchAll(type: NEAssetType?) throws -> [NEAsset] {
+        try fetchAll(filters: createQueryFilters(type: type) ?? [])
+    }
+
+    private func createQueryFilters(type: NEAssetType?) -> [QueryFilter]? {
+        guard let type else { return nil }
+        return [QueryFilter(field: "type", value: type.stringValue, comparison: .equal)]
+    }
 }

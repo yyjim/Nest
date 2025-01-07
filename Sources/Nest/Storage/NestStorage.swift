@@ -19,4 +19,7 @@ public protocol NestStorage {
 
     /// Asynchronously checks if data exists for the specified asset in storage.
     func dataExists(forAsset asset: NestAsset) async -> Bool
+
+    /// Asynchronously delete all data
+    func deleteAll() async throws
 }
