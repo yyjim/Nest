@@ -15,7 +15,7 @@ final class MockDatabase: NestDatabase {
         storedAssets.values.sorted { $0.createdAt < $1.createdAt }
     }
 
-    func add(_ asset: NestAsset) throws {
+    func add(_ asset: NestAsset) async throws {
         guard storedAssets[asset.id] == nil else {
             throw NSError(
                 domain: "MockDatabaseError",
@@ -26,27 +26,27 @@ final class MockDatabase: NestDatabase {
         storedAssets[asset.id] = asset
     }
 
-    func update(_ asset: NEAsset) throws {
+    func update(_ asset: NEAsset) async throws {
         storedAssets[asset.id] = asset
     }
 
-    func fetch(byId id: String) throws -> NestAsset? {
+    func fetch(byId id: String) async throws -> NestAsset? {
         storedAssets[id]
     }
 
-    func delete(byId id: String) throws {
+    func delete(byId id: String) async throws {
         storedAssets[id] = nil
     }
 
-    func fetchAll(filters: [QueryFilter]) throws -> [NestAsset] {
+    func fetchAll(filters: [QueryFilter]) async throws -> [NestAsset] {
         assets
     }
 
-    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NestAsset] {
+    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NestAsset] {
         Array(assets[offset..<(offset + limit)])
     }
 
-    func deleteAll() throws {
+    func deleteAll() async throws {
         storedAssets = [:]
     }
 }

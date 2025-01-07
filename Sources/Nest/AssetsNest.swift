@@ -108,9 +108,9 @@ public class AssetsNest: @unchecked Sendable {
         try await storage.write(data: data, assetIdentifier: asset.id)
         // Save or update the metadata in the database
         if isNew {
-            try database.add(asset)
+            try await database.add(asset)
         } else {
-            try database.update(asset)
+            try await database.update(asset)
         }
     }
 
@@ -124,7 +124,7 @@ public class AssetsNest: @unchecked Sendable {
     /// Deletes an asset, including its data and metadata.
     public func deleteAsset(asset: NEAsset) async throws {
         try await storage.deleteData(assetIdentifier: asset.id)
-        try database.delete(byId: asset.id)
+        try await database.delete(byId: asset.id)
     }
 
     // Delete all assets from the database. Currently intended for internal use only.
@@ -139,7 +139,7 @@ public class AssetsNest: @unchecked Sendable {
     /// - Throws: `NestError.assetNotFound` if the asset metadata is not found in the database.
     public func fetchAsset(assetIdentifier: AssetIdentifier) async throws -> NEAsset {
         let identifier = try assetIdentifier.identifier()
-        guard let asset = try database.fetch(byId: identifier) else {
+        guard let asset = try await database.fetch(byId: identifier) else {
             throw NestError.assetNotFound
         }
         return asset
@@ -162,13 +162,13 @@ public class AssetsNest: @unchecked Sendable {
     /// Fetches all assets matching the given filters.
     /// - Parameter filters: The filters to apply.
     /// - Returns: An array of matching `NEAsset` objects.
-    public func fetchAllAssets(filters: [QueryFilter]) throws -> [NEAsset] {
-        try database.fetchAll(filters: filters)
+    public func fetchAllAssets(filters: [QueryFilter]) async throws -> [NEAsset] {
+        try await database.fetchAll(filters: filters)
     }
 
     // Fetches all `NEAsset` objects with the given type.
-    public func fetchAllAssets(type: NestAssetType? = nil) throws -> [NEAsset] {
-        try database.fetchAll(type: type)
+    public func fetchAllAssets(type: NestAssetType? = nil) async throws -> [NEAsset] {
+        try await database.fetchAll(type: type)
     }
 
     /// Fetches assets with pagination and filters.
@@ -177,12 +177,12 @@ public class AssetsNest: @unchecked Sendable {
     ///   - offset: The offset to start fetching from.
     ///   - filters: The filters to apply.
     /// - Returns: An array of matching `NEAsset` objects.
-    public func fetchAssets(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NEAsset] {
-        try database.fetch(limit: limit, offset: offset, filters: filters)
+    public func fetchAssets(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NEAsset] {
+        try await database.fetch(limit: limit, offset: offset, filters: filters)
     }
 
     // Fetches `NEAsset` objects with pagination for given type.
-    public func fetchAssets(limit: Int, offset: Int, type: NEAssetType) throws -> [NEAsset] {
-        try database.fetch(limit: limit, offset: offset, type: type)
+    public func fetchAssets(limit: Int, offset: Int, type: NEAssetType) async throws -> [NEAsset] {
+        try await database.fetch(limit: limit, offset: offset, type: type)
     }
 }

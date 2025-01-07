@@ -18,22 +18,26 @@ class CoreDataAssetDatabase: NestDatabase {
     /// Adds a new asset or updates an existing one in the database.
     /// - Parameter asset: The `NEAsset` to be added or updated.
     /// - Throws: An error if saving to the database fails.
-    func add(_ asset: NEAsset) throws {
-        let newAsset = asset.toCoreDataAsset(in: context)
-        context.insert(newAsset)
-        try saveContext()
+    func add(_ asset: NEAsset) async throws {
+        try await context.perform { [context] in
+            let newAsset = asset.toCoreDataAsset(in: context)
+            context.insert(newAsset)
+            try context.save()
+        }
     }
 
-    func update(_ asset: NEAsset) throws {
-        guard let coreDataAsset = try fetchCoreDataAsset(byId: asset.id) else {
-            throw NestError.assetNotFound
+    func update(_ asset: NEAsset) async throws {
+        try await context.perform { [context] in
+            guard let coreDataAsset = try self.fetchCoreDataAsset(byId: asset.id) else {
+                throw NestError.assetNotFound
+            }
+            // Update the existing record
+            coreDataAsset.type = asset.type.stringValue
+            coreDataAsset.metadata = asset.metadataJSONString()
+            coreDataAsset.fileSize = asset.fileSize.map { Int64($0) } ?? 0
+            coreDataAsset.modifiedAt = Date()
+            try context.save()
         }
-        // Update the existing record
-        coreDataAsset.type = asset.type.stringValue
-        coreDataAsset.metadata = asset.metadataJSONString()
-        coreDataAsset.fileSize = asset.fileSize.map { Int64($0) } ?? 0
-        coreDataAsset.modifiedAt = Date()
-        try saveContext()
     }
 
     /// Fetches a CoreData asset entity by its unique identifier.
@@ -46,40 +50,58 @@ class CoreDataAssetDatabase: NestDatabase {
         return try context.fetch(request).first
     }
 
-    func fetch(byId id: String) throws -> NEAsset? {
-        guard let coreDataAsset = try fetchCoreDataAsset(byId: id) else {
-            return nil
+    func fetch(byId id: String) async throws -> NEAsset? {
+        try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    guard let coreDataAsset = try self.fetchCoreDataAsset(byId: id) else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    let neAsset = coreDataAsset.toNEAsset()
+                    continuation.resume(returning: neAsset)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         }
-        return coreDataAsset.toNEAsset()
     }
 
-    func delete(byId id: String) throws {
-        guard let coreDataAsset = try fetchCoreDataAsset(byId: id) else {
-            return
+    func delete(byId id: String) async throws {
+        try await context.perform { [context] in
+            guard let coreDataAsset = try self.fetchCoreDataAsset(byId: id) else {
+                return
+            }
+            context.delete(coreDataAsset)
+            try context.save()
         }
-        context.delete(coreDataAsset)
-        try saveContext()
     }
 
-    func fetchAll(filters: [QueryFilter]) throws -> [NEAsset] {
-        let request: NSFetchRequest<Asset> = Asset.fetchRequest()
-        request.predicate = createCompoundPredicate(from: filters)
-        return try context.fetch(request).map { $0.toNEAsset() }
-    }
-
-    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) throws -> [NEAsset] {
-        let request: NSFetchRequest<Asset> = Asset.fetchRequest()
-        request.fetchLimit = limit
-        request.fetchOffset = offset
-        request.predicate = createCompoundPredicate(from: filters)
-        return try context.fetch(request).map { $0.toNEAsset() }
+    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NEAsset] {
+        let predicate = createCompoundPredicate(from: filters)
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform { [context] in
+                do {
+                    let request: NSFetchRequest<Asset> = Asset.fetchRequest()
+                    request.fetchLimit = limit
+                    request.fetchOffset = offset
+                    request.predicate = predicate
+                    let assets = try context.fetch(request).map { $0.toNEAsset() }
+                    continuation.resume(returning: assets)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
     }
 
     func deleteAll() async throws {
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Asset")
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        try context.execute(deleteRequest)
-        try saveContext()
+        try await context.perform { [context] in
+            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Asset")
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            try context.execute(deleteRequest)
+            try context.save()
+        }
     }
 
     private func createCompoundPredicate(from filters: [QueryFilter]) -> NSPredicate? {
@@ -97,13 +119,6 @@ class CoreDataAssetDatabase: NestDatabase {
             }
         }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-    }
-
-    private func saveContext() throws {
-        guard context.hasChanges else {
-            return
-        }
-        try context.save()
     }
 }
 
