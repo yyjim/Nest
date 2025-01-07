@@ -3,17 +3,17 @@ import UIKit
 import Foundation
 @testable import Nest
 
-extension Nest {
-    static let mock: Nest = {
+extension AssetsNest {
+    static let mock: AssetsNest = {
         let storage = MockStorage()
         let database = MockDatabase()
-        return Nest(storage: storage, database: database)
+        return AssetsNest(storage: storage, database: database)
     }()
 }
 
 @Test
 func testFetchAssets() async throws {
-    let nest = Nest.localShared
+    let nest = AssetsNest.sharedLocal
     try await nest.deleteAllAssets()
     #expect(try! nest.fetchAllAssets().isEmpty)
 
@@ -37,17 +37,17 @@ func testFetchAssets() async throws {
     #expect(try! nest.fetchAllAssets().count == 20 + 10 + 5)
 }
 
-@Test func testNestCURD() async throws {
-    // NOTE: The @Test(arguments: [Nest.localShared, Nest.mock]) doesn't work, so we have to test them separately
-    // Test with Nest.Mock
-    try await performCURDTest(using: Nest.mock)
+@Test func testAssetsNestCURD() async throws {
+    // NOTE: The @Test(arguments: [AssetsNest.sharedLocal, AssetsNest.mock]) doesn't work, so we have to test them separately
+    // Test with AssetsNest.Mock
+    try await performCURDTest(using: AssetsNest.mock)
 
-    // Test with Nest.localShared
-    try await performCURDTest(using: Nest.localShared)
+    // Test with AssetsNest.sharedLocal
+    try await performCURDTest(using: AssetsNest.sharedLocal)
 }
 
 // Helper function to perform CURD test
-private func performCURDTest(using nest: Nest) async throws {
+private func performCURDTest(using nest: AssetsNest) async throws {
     try await nest.deleteAllAssets()
     #expect(try! nest.fetchAllAssets().count == 0)
 
@@ -82,15 +82,15 @@ private func performCURDTest(using nest: Nest) async throws {
 }
 
 @Test func testImageCURD() async throws {
-    // Test with Nest.Mock
-    try await performImageCURDTest(using: Nest.mock)
+    // Test with AssetsNest.Mock
+    try await performImageCURDTest(using: AssetsNest.mock)
 
-    // Test with Nest.localShared
-    try await performImageCURDTest(using: Nest.localShared)
+    // Test with AssetsNest.sharedLocal
+    try await performImageCURDTest(using: AssetsNest.sharedLocal)
 }
 
 // Helper function to perform CURD test for images
-private func performImageCURDTest(using nest: Nest) async throws {
+private func performImageCURDTest(using nest: AssetsNest) async throws {
     func generateTestImage(size: CGSize = CGSize(width: 10, height: 10), color: UIColor = .blue) -> UIImage {
         UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
         defer { UIGraphicsEndImageContext() }

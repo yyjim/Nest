@@ -7,7 +7,7 @@
 
 import UIKit
 
-extension Nest {
+extension AssetsNest {
     /// Saves a `UIImage` with the specified format.
     /// - Parameters:
     ///   - image: The `UIImage` to save.

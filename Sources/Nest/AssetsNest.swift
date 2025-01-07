@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class Nest: @unchecked Sendable {
+public class AssetsNest: @unchecked Sendable {
     private let storage: NestStorage
     private let database: NestDatabase
 
@@ -29,10 +29,10 @@ public class Nest: @unchecked Sendable {
     }
 
     /// Shared instance using `LocalStorage` and CoreData.
-    public static let localShared: Nest = {
+    public static let sharedLocal: AssetsNest = {
         let storage = LocalStorage(directory: .documents)
         let database = CoreDataAssetDatabase(context: CoreDataManager.shared.context)
-        return Nest(storage: storage, database: database)
+        return AssetsNest(storage: storage, database: database)
     }()
 
     /// Initializes the `Nest` framework with the provided storage and database implementations.
