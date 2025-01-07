@@ -14,14 +14,14 @@ public extension NestStorage {
         guard let imageData = format.data(from: image) else {
             throw NestError.unableToConvertToData
         }
-        try await write(data: imageData, forAsset: asset)
+        try await write(data: imageData, assetIdentifier: asset.id)
     }
 
     /// Reads a UIImage from storage for the specified asset.
     func readImage(forAsset asset: NestAsset) async throws -> UIImage {
         let imageData: Data
         do {
-            imageData = try await readData(forAsset: asset)
+            imageData = try await readData(assetIdentifier: asset.id)
         } catch {
             throw NestError.failedToReadData(underlyingError: nil)
         }
