@@ -11,23 +11,23 @@ import Foundation
 final class MockStorage: NestStorage {
     var savedData: [String: Data] = [:]
 
-    func write(data: Data, forAsset asset: NestAsset) async throws {
-        savedData[asset.id] = data
+    func write(data: Data, assetIdentifier: String) async throws {
+        savedData[assetIdentifier] = data
     }
 
-    func readData(forAsset asset: NestAsset) async throws -> Data {
-        guard let data = savedData[asset.id] else {
+    func readData(assetIdentifier: String) async throws -> Data {
+        guard let data = savedData[assetIdentifier] else {
             throw NestError.dataNotFound
         }
         return data
     }
 
-    func deleteData(forAsset asset: NestAsset) async throws {
-        savedData.removeValue(forKey: asset.id)
+    func deleteData(assetIdentifier: String) async throws {
+        savedData.removeValue(forKey: assetIdentifier)
     }
 
-    func dataExists(forAsset asset: NestAsset) async -> Bool {
-        return savedData[asset.id] != nil
+    func dataExists(assetIdentifier: String) async -> Bool {
+        return savedData[assetIdentifier] != nil
     }
 
     func deleteAll() async throws {

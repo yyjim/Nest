@@ -105,7 +105,7 @@ public class AssetsNest: @unchecked Sendable {
     /// - Throws: An error if saving to the storage or database fails.
     private func saveAsset(_ asset: NEAsset, data: Data, isNew: Bool) async throws {
         // Save the file data to storage
-        try await storage.write(data: data, forAsset: asset)
+        try await storage.write(data: data, assetIdentifier: asset.id)
         // Save or update the metadata in the database
         if isNew {
             try database.add(asset)
@@ -123,7 +123,7 @@ public class AssetsNest: @unchecked Sendable {
 
     /// Deletes an asset, including its data and metadata.
     public func deleteAsset(asset: NEAsset) async throws {
-        try await storage.deleteData(forAsset: asset)
+        try await storage.deleteData(assetIdentifier: asset.id)
         try database.delete(byId: asset.id)
     }
 
@@ -156,7 +156,7 @@ public class AssetsNest: @unchecked Sendable {
 
     /// Fetches the binary data associated with an asset.
     public func fetchAssetData(asset: NEAsset) async throws -> Data {
-        try await storage.readData(forAsset: asset)
+        try await storage.readData(assetIdentifier: asset.id)
     }
 
     /// Fetches all assets matching the given filters.

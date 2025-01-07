@@ -25,8 +25,8 @@ public class LocalStorage: NestStorage {
 
     // MARK: - NestStorage Protocol Implementation
 
-    public func write(data: Data, forAsset asset: NestAsset) async throws {
-        let fileURL = makeFileURL(for: asset)
+    public func write(data: Data, assetIdentifier: String) async throws {
+        let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
         let dirURL = fileURL.deletingLastPathComponent()
         try await Task.detached {
             do {
@@ -46,11 +46,11 @@ public class LocalStorage: NestStorage {
         }.value
     }
 
-    public func readData(forAsset asset: NestAsset) async throws -> Data {
-        guard await dataExists(forAsset: asset) else {
+    public func readData(assetIdentifier: String) async throws -> Data {
+        guard await dataExists(assetIdentifier: assetIdentifier) else {
             throw NestError.dataNotFound
         }
-        let fileURL = makeFileURL(for: asset)
+        let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
         return try await Task.detached {
             do {
                 return try Data(contentsOf: fileURL)
@@ -60,11 +60,11 @@ public class LocalStorage: NestStorage {
         }.value
     }
 
-    public func deleteData(forAsset asset: NestAsset) async throws {
-        guard await dataExists(forAsset: asset) else {
+    public func deleteData(assetIdentifier: String) async throws {
+        guard await dataExists(assetIdentifier: assetIdentifier) else {
             throw NestError.dataNotFound
         }
-        let fileURL = makeFileURL(for: asset)
+        let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
         try await Task.detached {
             do {
                 try FileManager.default.removeItem(at: fileURL)
@@ -74,8 +74,8 @@ public class LocalStorage: NestStorage {
         }.value
     }
 
-    public func dataExists(forAsset asset: NestAsset) async -> Bool {
-        let fileURL = makeFileURL(for: asset)
+    public func dataExists(assetIdentifier: String) async -> Bool {
+        let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
         return await Task.detached {
             return FileManager.default.fileExists(atPath: fileURL.path)
         }.value
@@ -94,7 +94,7 @@ public class LocalStorage: NestStorage {
 
     // MARK: - Helper Methods
 
-    private func makeFileURL(for asset: NestAsset) -> URL {
+    private func makeFileURL(assetIdentifier: String) -> URL {
         // To improve file system performance and avoid having too many files in a single directory,
         // we organize files into a hierarchical structure using two levels of subdirectories.
         // This approach prevents performance degradation when the number of files grows significantly.
@@ -104,15 +104,12 @@ public class LocalStorage: NestStorage {
         //
         // Identifier         Asset Type    MD5 Hash        Path
         // ---------------------------------------------------------------------------
-        // example-photo-id   photo         ab56b4d92b4...  /tmp/localStorage/photo/ab/56/example-photo
-        // another-video-id   video         e99a18c428c...  /tmp/localStorage/video/e9/9a/another-video
+        // example-photo-id   photo         ab56b4d92b4...  /tmp/localStorage/ab/56/example-photo
+        // another-video-id   video         e99a18c428c...  /tmp/localStorage/e9/9a/another-video
         //
 
-        // Target base directory, e.g., "/tmp/localStorage/photo"
-        let typeDirectory = baseDirectory.appendingPathComponent(asset.type.folder)
-
         // Generate the MD5 hash of the localIdentifier
-        let md5 = md5Hash(from: asset.id)
+        let md5 = md5Hash(from: assetIdentifier)
 
         // Use the first two characters as the first-level subdirectory
         let firstLevel = String(md5.prefix(2))
@@ -120,12 +117,12 @@ public class LocalStorage: NestStorage {
         let secondLevel = String(md5.dropFirst(2).prefix(2))
 
         // Combine the directory path
-        let directoryPath = typeDirectory
+        let directoryPath = baseDirectory
             .appendingPathComponent(firstLevel)
             .appendingPathComponent(secondLevel)
 
         // Return the final file path with the asset ID as the file name
-        return directoryPath.appendingPathComponent(asset.id)
+        return directoryPath.appendingPathComponent(assetIdentifier)
     }
 
     /// Computes the MD5 hash of a given string and returns it as a hexadecimal string.
