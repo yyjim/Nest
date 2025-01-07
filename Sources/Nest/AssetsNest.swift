@@ -90,7 +90,12 @@ public class AssetsNest: @unchecked Sendable {
             fileSize: data.count,
             metadata: metadata ?? existingAsset.metadata
         )
-        try await saveAsset(updatedAsset, data: data, isNew: false)
+        try await updateAsset(asset: updatedAsset, data: data)
+    }
+
+    /// Updates an existing asset with new data.
+    public func updateAsset(asset: NEAsset, data: Data) async throws {
+        try await saveAsset(asset, data: data, isNew: false)
     }
 
     /// Saves or updates an asset along with its data in the storage and database.
@@ -112,15 +117,14 @@ public class AssetsNest: @unchecked Sendable {
     /// Deletes an asset, including its data and metadata.
     /// - Parameter id: The unique identifier of the asset to delete.
     public func deleteAsset(assetIdentifier: AssetIdentifier) async throws {
-        // Fetch the asset metadata from the database
-        let identifier = try assetIdentifier.identifier()
-        guard let asset = try database.fetch(byId: identifier) else {
-            throw NestError.assetNotFound
-        }
-        // Delete the file from storage
+        let asset = try await fetchAsset(assetIdentifier: assetIdentifier)
+        try await deleteAsset(asset: asset)
+    }
+
+    /// Deletes an asset, including its data and metadata.
+    public func deleteAsset(asset: NEAsset) async throws {
         try await storage.deleteData(forAsset: asset)
-        // Remove the metadata from the database
-        try database.delete(byId: identifier)
+        try database.delete(byId: asset.id)
     }
 
     // Delete all assets from the database. Currently intended for internal use only.
@@ -147,7 +151,12 @@ public class AssetsNest: @unchecked Sendable {
     /// - Throws: `NestError.dataNotFound` if the asset metadata or binary data is not found.
     public func fetchAssetData(assetIdentifier: AssetIdentifier) async throws -> Data {
         let asset = try await fetchAsset(assetIdentifier: assetIdentifier)
-        return try await storage.readData(forAsset: asset)
+        return try await fetchAssetData(asset: asset)
+    }
+
+    /// Fetches the binary data associated with an asset.
+    public func fetchAssetData(asset: NEAsset) async throws -> Data {
+        try await storage.readData(forAsset: asset)
     }
 
     /// Fetches all assets matching the given filters.
