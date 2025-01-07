@@ -6,11 +6,11 @@
 //
 
 public struct QueryFilter {
-    let field: String
-    let value: Any
-    let comparison: ComparisonType
+    public let field: String
+    public let value: Any
+    public let comparison: ComparisonType
 
-    enum ComparisonType {
+    public enum ComparisonType {
         case equal
         case lessThan
         case greaterThan
