@@ -164,8 +164,8 @@ public class AssetsNest: @unchecked Sendable {
     /// - Returns: The binary data (`Data`) associated with the asset stored in the storage.
     /// - Throws: `NestError.dataNotFound` if the asset metadata or binary data is not found.
     public func fetchAssetData(assetIdentifier: AssetIdentifier) async throws -> Data {
-        let asset = try await fetchAsset(assetIdentifier: assetIdentifier)
-        return try await fetchAssetData(asset: asset)
+        let identifier = try assetIdentifier.identifier()
+        return try await storage.readData(assetIdentifier: identifier)
     }
 
     /// Fetches the binary data associated with an asset.
