@@ -134,8 +134,15 @@ public class AssetsNest: @unchecked Sendable {
         try await database.delete(byId: asset.id)
     }
 
+    /// Deletes assets, including its data and metadata.
+    public func deleteAssets(assets: [NEAsset]) async throws {
+        for asset in assets {
+            try await deleteAsset(asset: asset)
+        }
+    }
+
     // Delete all assets from the database. Currently intended for internal use only.
-    func deleteAllAssets() async throws {
+    public func deleteAllAssets() async throws {
         try await database.deleteAll()
         try await storage.deleteAll()
     }
