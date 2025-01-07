@@ -21,7 +21,7 @@ class CoreDataAssetDatabase: NestDatabase {
     func add(_ asset: NEAsset) throws {
         let newAsset = asset.toCoreDataAsset(in: context)
         context.insert(newAsset)
-        try context.save()
+        try saveContext()
     }
 
     func update(_ asset: NEAsset) throws {
@@ -33,7 +33,7 @@ class CoreDataAssetDatabase: NestDatabase {
         coreDataAsset.metadata = asset.metadataJSONString()
         coreDataAsset.fileSize = asset.fileSize.map { Int64($0) } ?? 0
         coreDataAsset.modifiedAt = Date()
-        try context.save()
+        try saveContext()
     }
 
     /// Fetches a CoreData asset entity by its unique identifier.
@@ -58,7 +58,7 @@ class CoreDataAssetDatabase: NestDatabase {
             return
         }
         context.delete(coreDataAsset)
-        try context.save()
+        try saveContext()
     }
 
     func fetchAll(filters: [QueryFilter]) throws -> [NEAsset] {
@@ -79,7 +79,7 @@ class CoreDataAssetDatabase: NestDatabase {
         let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Asset")
         let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
         try context.execute(deleteRequest)
-        try context.save()
+        try saveContext()
     }
 
     private func createCompoundPredicate(from filters: [QueryFilter]) -> NSPredicate? {
@@ -97,6 +97,13 @@ class CoreDataAssetDatabase: NestDatabase {
             }
         }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+
+    private func saveContext() throws {
+        guard context.hasChanges else {
+            return
+        }
+        try context.save()
     }
 }
 
