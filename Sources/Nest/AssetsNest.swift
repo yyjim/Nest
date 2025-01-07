@@ -123,7 +123,14 @@ public class AssetsNest: @unchecked Sendable {
 
     /// Deletes an asset, including its data and metadata.
     public func deleteAsset(asset: NEAsset) async throws {
-        try await storage.deleteData(assetIdentifier: asset.id)
+        do {
+            try await storage.deleteData(assetIdentifier: asset.id)
+        } catch NestError.dataNotFound {
+            // Ignore this error as the asset may still exist in the database
+        } catch {
+            throw error
+        }
+        // Always attempt to delete the asset from the database
         try await database.delete(byId: asset.id)
     }
 
