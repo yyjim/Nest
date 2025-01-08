@@ -74,13 +74,14 @@ class CoreDataAssetDatabase: NestDatabase {
         }
     }
 
-    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NEAsset] {
+    func fetch(limit: Int, offset: Int, filters: [QueryFilter], ascending: Bool) async throws -> [NEAsset] {
         let predicate = createCompoundPredicate(from: filters)
         return try await persistentContainer.performBackgroundTask { context in
             let request: NSFetchRequest<Asset> = Asset.fetchRequest()
             request.fetchLimit = limit
             request.fetchOffset = offset
             request.predicate = predicate
+            request.sortDescriptors = [NSSortDescriptor(key: "createdAt", ascending: ascending)]
             let assets = try context.fetch(request).map { $0.toNEAsset() }
             return assets
         }

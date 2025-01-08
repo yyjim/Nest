@@ -174,15 +174,17 @@ public class AssetsNest: @unchecked Sendable {
     }
 
     /// Fetches all assets matching the given filters.
-    /// - Parameter filters: The filters to apply.
+    /// - Parameters
+    ///   - filters: The filters to apply.
+    ///   - ascending: A Boolean indicating the sorting order of the creation date. (Default: false)
     /// - Returns: An array of matching `NEAsset` objects.
-    public func fetchAllAssets(filters: [QueryFilter]) async throws -> [NEAsset] {
-        try await database.fetchAll(filters: filters)
+    public func fetchAllAssets(filters: [QueryFilter], ascending: Bool = false) async throws -> [NEAsset] {
+        try await database.fetchAll(filters: filters, ascending: ascending)
     }
 
     // Fetches all `NEAsset` objects with the given type.
-    public func fetchAllAssets(type: NestAssetType? = nil) async throws -> [NEAsset] {
-        try await database.fetchAll(type: type)
+    public func fetchAllAssets(type: NestAssetType? = nil, ascending: Bool = false) async throws -> [NEAsset] {
+        try await database.fetchAll(type: type, ascending: ascending)
     }
 
     /// Fetches assets with pagination and filters.
@@ -190,13 +192,24 @@ public class AssetsNest: @unchecked Sendable {
     ///   - limit: The maximum number of assets to fetch.
     ///   - offset: The offset to start fetching from.
     ///   - filters: The filters to apply.
+    ///   - ascending: A Boolean indicating the sorting order of the creation date. (Default: false)
     /// - Returns: An array of matching `NEAsset` objects.
-    public func fetchAssets(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NEAsset] {
-        try await database.fetch(limit: limit, offset: offset, filters: filters)
+    public func fetchAssets(
+        limit: Int,
+        offset: Int,
+        filters: [QueryFilter],
+        ascending: Bool = false
+    ) async throws -> [NEAsset] {
+        try await database.fetch(limit: limit, offset: offset, filters: filters, ascending: ascending)
     }
 
     // Fetches `NEAsset` objects with pagination for given type.
-    public func fetchAssets(limit: Int, offset: Int, type: NEAssetType) async throws -> [NEAsset] {
-        try await database.fetch(limit: limit, offset: offset, type: type)
+    public func fetchAssets(
+        limit: Int,
+        offset: Int,
+        type: NEAssetType,
+        ascending: Bool = false
+    ) async throws -> [NEAsset] {
+        try await database.fetch(limit: limit, offset: offset, type: type, ascending: ascending)
     }
 }

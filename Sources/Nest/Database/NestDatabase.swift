@@ -37,47 +37,55 @@ public protocol NestDatabase {
     func delete(byId id: String) async throws
 
     /// Fetches all `NEAsset` objects matching the given filters.
-    /// - Parameter filters: Filters to apply for querying.
+    /// - Parameters
+    ///   - filters: Filters to apply for querying.
+    ///   - ascending: A Boolean indicating the sorting order of the creation date.
     /// - Returns: An array of matching `NEAsset` objects.
-    func fetchAll(filters: [QueryFilter]) async throws -> [NEAsset]
+    func fetchAll(filters: [QueryFilter], ascending: Bool) async throws -> [NEAsset]
 
     // Fetches all `NEAsset` objects with the given type.
-    func fetchAll(type: NEAssetType?) async throws -> [NEAsset]
+    func fetchAll(type: NEAssetType?, ascending: Bool) async throws -> [NEAsset]
 
     /// Fetches `NEAsset` objects with pagination and filters.
     /// - Parameters:
     ///   - limit: The maximum number of entities to fetch.
     ///   - offset: The offset to start fetching from.
     ///   - filters: Filters to apply for querying.
+    ///   - ascending: A Boolean indicating the sorting order of the creation date.
     /// - Returns: An array of matching `NEAsset` objects.
-    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NEAsset]
+    func fetch(limit: Int, offset: Int, filters: [QueryFilter], ascending: Bool) async throws -> [NEAsset]
 
     // Fetches `NEAsset` objects with pagination for given type.
-    func fetch(limit: Int, offset: Int, type: NEAssetType?) async throws -> [NEAsset]
+    func fetch(limit: Int, offset: Int, type: NEAssetType?, ascending: Bool) async throws -> [NEAsset]
 
     // Delete all
     func deleteAll() async throws
 }
 
 extension NestDatabase {
-    public func fetchAll() async throws -> [NEAsset] {
-        try await fetchAll(type: nil)
+    public func fetchAll(ascending: Bool) async throws -> [NEAsset] {
+        try await fetchAll(type: nil, ascending: ascending)
     }
 
-    public func fetch(limit: Int, offset: Int) async throws -> [NEAsset] {
-        try await fetch(limit: limit, offset: offset, type: nil)
+    public func fetch(limit: Int, offset: Int, ascending: Bool) async throws -> [NEAsset] {
+        try await fetch(limit: limit, offset: offset, type: nil, ascending: ascending)
     }
 
-    func fetchAll(filters: [QueryFilter]) async throws -> [NEAsset] {
-        try await fetch(limit: 0, offset: 0, filters: filters)
+    func fetchAll(filters: [QueryFilter], ascending: Bool) async throws -> [NEAsset] {
+        try await fetch(limit: 0, offset: 0, filters: filters, ascending: ascending)
     }
 
-    func fetch(limit: Int, offset: Int, type: NEAssetType?) async throws -> [NEAsset] {
-        try await fetch(limit: limit, offset: offset, filters: createQueryFilters(type: type) ?? [])
+    func fetch(limit: Int, offset: Int, type: NEAssetType?, ascending: Bool) async throws -> [NEAsset] {
+        try await fetch(
+            limit: limit,
+            offset: offset,
+            filters: createQueryFilters(type: type) ?? [],
+            ascending: ascending
+        )
     }
 
-    func fetchAll(type: NEAssetType?) async throws -> [NEAsset] {
-        try await fetchAll(filters: createQueryFilters(type: type) ?? [])
+    func fetchAll(type: NEAssetType?, ascending: Bool) async throws -> [NEAsset] {
+        try await fetchAll(filters: createQueryFilters(type: type) ?? [], ascending: ascending)
     }
 
     private func createQueryFilters(type: NEAssetType?) -> [QueryFilter]? {

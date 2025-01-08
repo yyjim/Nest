@@ -42,8 +42,12 @@ final class MockDatabase: NestDatabase {
         assets
     }
 
-    func fetch(limit: Int, offset: Int, filters: [QueryFilter]) async throws -> [NestAsset] {
-        Array(assets[offset..<(offset + limit)])
+    func fetch(limit: Int, offset: Int, filters: [QueryFilter], ascending: Bool) async throws -> [NestAsset] {
+        let sortedAssets: [NestAsset] = storedAssets.values.sorted {
+            ascending ? $0.createdAt < $1.createdAt : $0.createdAt > $1.createdAt
+        }
+        let paginatedAssets = sortedAssets.dropFirst(offset).prefix(limit)
+        return Array(paginatedAssets)
     }
 
     func deleteAll() async throws {
