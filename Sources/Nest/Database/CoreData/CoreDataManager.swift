@@ -8,16 +8,10 @@
 import CoreData
 
 struct CoreDataManager {
-    // Singleton instance
     static let shared = CoreDataManager()
 
     // The Core Data persistent container
-    private let persistentContainer: NSPersistentContainer
-
-    // The main managed object context
-    var context: NSManagedObjectContext {
-        persistentContainer.viewContext
-    }
+    let persistentContainer: NSPersistentContainer
 
     /// Initializes the Core Data manager with a specific model name.
     /// - Parameter modelName: The name of the Core Data model file.
@@ -34,14 +28,5 @@ struct CoreDataManager {
         // Configure context merge policies
         persistentContainer.viewContext.mergePolicy = NSMergePolicy.mergeByPropertyObjectTrump
         persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
-    }
-
-    /// Saves any changes in the context to the persistent store.
-    /// - Throws: An error if saving fails.
-    public func saveContext() throws {
-        guard context.hasChanges else {
-            return
-        }
-        try context.save()
     }
 }
