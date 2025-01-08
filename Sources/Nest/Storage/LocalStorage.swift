@@ -8,6 +8,10 @@
 import CryptoKit
 import Foundation
 
+@globalActor actor LocalStorageFileManagerActor: GlobalActor {
+    static let shared = LocalStorageFileManagerActor()
+}
+
 public class LocalStorage: NestStorage {
     private let baseDirectory: URL
 
@@ -25,70 +29,64 @@ public class LocalStorage: NestStorage {
 
     // MARK: - NestStorage Protocol Implementation
 
+    @LocalStorageFileManagerActor
     public func write(data: Data, assetIdentifier: String) async throws {
         let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
         let dirURL = fileURL.deletingLastPathComponent()
-        try await Task.detached {
-            do {
-                let fileManager = FileManager.default
-                // Ensure the directory exists
-                try fileManager.createDirectory(at: dirURL, withIntermediateDirectories: true)
-                
-                // Write data to the file (overwrites if it exists)
-                if fileManager.fileExists(atPath: fileURL.path) {
-                    try fileManager.removeItem(at: fileURL)
-                }
-                
-                try data.write(to: fileURL)
-            } catch {
-                throw NestError.failedToWriteData(underlyingError: error)
+        do {
+            let fileManager = FileManager.default
+            // Ensure the directory exists
+            try fileManager.createDirectory(at: dirURL, withIntermediateDirectories: true)
+
+            // Write data to the file (overwrites if it exists)
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
             }
-        }.value
+
+            try data.write(to: fileURL)
+        } catch {
+            throw NestError.failedToWriteData(underlyingError: error)
+        }
     }
 
+    @LocalStorageFileManagerActor
     public func readData(assetIdentifier: String) async throws -> Data {
         guard await dataExists(assetIdentifier: assetIdentifier) else {
             throw NestError.dataNotFound
         }
         let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
-        return try await Task.detached {
-            do {
-                return try Data(contentsOf: fileURL)
-            } catch {
-                throw NestError.failedToReadData(underlyingError: error)
-            }
-        }.value
-    }
-
-    public func deleteData(assetIdentifier: String) async throws {
-        guard await dataExists(assetIdentifier: assetIdentifier) else {
-            throw NestError.dataNotFound
+        do {
+            return try Data(contentsOf: fileURL)
+        } catch {
+            throw NestError.failedToReadData(underlyingError: error)
         }
-        let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
-        try await Task.detached {
-            do {
-                try FileManager.default.removeItem(at: fileURL)
-            } catch {
-                throw NestError.failedToDeleteData(underlyingError: error)
-            }
-        }.value
     }
 
+    @LocalStorageFileManagerActor
+    public func deleteData(assetIdentifier: String) async throws {
+        do {
+            let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
+            if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+            }
+        } catch {
+            throw NestError.failedToDeleteData(underlyingError: error)
+        }
+    }
+
+    @LocalStorageFileManagerActor
     public func dataExists(assetIdentifier: String) async -> Bool {
         let fileURL = makeFileURL(assetIdentifier: assetIdentifier)
-        return await Task.detached {
-            return FileManager.default.fileExists(atPath: fileURL.path)
-        }.value
+        return FileManager.default.fileExists(atPath: fileURL.path)
     }
 
+    @LocalStorageFileManagerActor
     public func deleteAll() async throws {
         let directoryURL = baseDirectory
         do {
-            try await Task.detached {
-                if FileManager.default.fileExists(atPath: directoryURL.path) {
-                    try FileManager.default.removeItem(at: directoryURL)
-                }
-            }.value
+            if FileManager.default.fileExists(atPath: directoryURL.path) {
+                try FileManager.default.removeItem(at: directoryURL)
+            }
         } catch {
             throw NestError.failedToDeleteData(underlyingError: error)
         }
