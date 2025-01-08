@@ -31,7 +31,7 @@ public class AssetsNest: @unchecked Sendable {
     /// Shared instance using `LocalStorage` and CoreData.
     public static let sharedLocal: AssetsNest = {
         let storage = LocalStorage(directory: .documents)
-        let database = CoreDataAssetDatabase(context: CoreDataManager.shared.context)
+        let database = CoreDataAssetDatabase(persistentContainer: CoreDataManager.shared.persistentContainer)
         return AssetsNest(storage: storage, database: database)
     }()
 
