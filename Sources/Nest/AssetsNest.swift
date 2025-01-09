@@ -1,10 +1,11 @@
 //
-//  Nest.swift
+//  AssetsNest.swift
 //  Nest
 //
 //  Created by Jim Wang on 2025/1/4.
 //
 
+import Combine
 import Foundation
 
 public class AssetsNest: @unchecked Sendable {
@@ -211,5 +212,58 @@ public class AssetsNest: @unchecked Sendable {
         ascending: Bool = false
     ) async throws -> [NEAsset] {
         try await database.fetch(limit: limit, offset: offset, type: type, ascending: ascending)
+    }
+
+    /// Asynchronously retrieves the total count of items in the database
+    /// - Returns: The total number of items stored in the database
+    /// - Throws: Database errors that might occur during the counting operation
+    public func fetchCount(type: NEAssetType? = nil) async throws -> Int {
+        try await database.fetchCount(type: type)
+    }
+
+    // MARK: - Publishers
+
+    /// Publisher that emits when the database content has been updated
+    public var didUpdatePublisher: AnyPublisher<AssetsNest, Never> {
+        database
+            .didUpdatePublisher
+            .compactMap { [weak self] _ in
+                guard let self else { return nil }
+                return self
+            }
+            .eraseToAnyPublisher()
+    }
+
+    public func totalCountPublisher(type: NEAssetType? = nil) -> AnyPublisher<Int, Never> {
+        didUpdatePublisher
+            .flatMap { nest -> AnyPublisher<Int?, Never> in
+                let publisher = Future<Int?, Never> { promise in
+                    let wrapper = FutureResultWrapper<Int?, Never>(promise)
+                    Task {
+                        do {
+                            let count = try await nest.fetchCount(type: type)
+                            wrapper.promise(.success(count))
+                        } catch {
+                            wrapper.promise(.success(nil))
+                        }
+                    }
+                }
+                return publisher.eraseToAnyPublisher()
+            }
+            .compactMap { $0 }
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Helper
+
+private
+final class FutureResultWrapper<Output, Failure: Error>: @unchecked Sendable {
+    typealias Promise = (Result<Output, Failure>) -> Void
+
+    let promise: Promise
+
+    fileprivate init(_ promise: @escaping Promise) {
+        self.promise = promise
     }
 }

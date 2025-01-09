@@ -5,10 +5,12 @@
 //  Created by Jim Wang on 2025/1/5.
 //
 
+import Combine
 import Foundation
 @testable import Nest
 
 final class MockDatabase: NestDatabase {
+    @Published
     var storedAssets: [String: NestAsset] = [:]
 
     private var assets: [NestAsset] {
@@ -52,5 +54,21 @@ final class MockDatabase: NestDatabase {
 
     func deleteAll() async throws {
         storedAssets = [:]
+    }
+
+    func fetchCount(type: NEAssetType?) async throws -> Int {
+        if type == nil {
+            return storedAssets.count
+        }
+        return storedAssets.values.filter {  $0.type == type }.count
+    }
+
+    var didUpdatePublisher: AnyPublisher<NestDatabase, Never> {
+        $storedAssets
+            .compactMap { [weak self] _ in
+                guard let self = self else { return nil }
+                return self
+            }
+            .eraseToAnyPublisher()
     }
 }

@@ -16,6 +16,7 @@ func testFetchAssets() async throws {
     let nest = AssetsNest.sharedLocal
     try await nest.deleteAllAssets()
     #expect(try! await nest.fetchAllAssets().isEmpty)
+    #expect(try! await nest.fetchCount() == 0)
 
     // Helper function to create assets
     func createDummyAssets(type: NEAssetType, count: Int) async throws {
@@ -35,21 +36,27 @@ func testFetchAssets() async throws {
     #expect(try! await nest.fetchAllAssets(type: .video).count == 10)
     #expect(try! await nest.fetchAllAssets(type: .custom("sticker")).count == 5)
     #expect(try! await nest.fetchAllAssets().count == 20 + 10 + 5)
+
+    #expect(try! await nest.fetchCount(type: .photo) == 20)
+    #expect(try! await nest.fetchCount(type: .video) == 10)
+    #expect(try! await nest.fetchCount(type: .custom("sticker")) == 5)
+    #expect(try! await nest.fetchCount() == 20 + 10 + 5)
 }
 
 @Test func testAssetsNestCURD() async throws {
     // NOTE: The @Test(arguments: [AssetsNest.sharedLocal, AssetsNest.mock]) doesn't work, so we have to test them separately
     // Test with AssetsNest.Mock
-    try await performCURDTest(using: AssetsNest.mock)
+    try await performCURDTest(using: AssetsNest.mock, name: "mock")
 
     // Test with AssetsNest.sharedLocal
-    try await performCURDTest(using: AssetsNest.sharedLocal)
+    try await performCURDTest(using: AssetsNest.sharedLocal, name: "sharedLocal")
 }
 
 // Helper function to perform CURD test
-private func performCURDTest(using nest: AssetsNest) async throws {
+private func performCURDTest(using nest: AssetsNest, name: String) async throws {
     try await nest.deleteAllAssets()
-    #expect(try! await nest.fetchAllAssets().count == 0)
+    #expect(try! await nest.fetchAllAssets().isEmpty)
+    #expect(try! await nest.fetchCount() == 0)
 
     let data = Data(repeating: 0, count: 1024)
     let metadata: [String: MetadataValue] = ["format": .string("png")]
