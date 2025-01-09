@@ -19,6 +19,8 @@ class CoreDataAssetDatabase: NestDatabase {
 
     init(persistentContainer: NSPersistentContainer) {
         self.persistentContainer = persistentContainer
+
+        installBindings()
     }
 
     /// Adds a new asset or updates an existing one in the database.
