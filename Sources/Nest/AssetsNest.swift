@@ -235,23 +235,25 @@ public class AssetsNest: @unchecked Sendable {
     }
 
     public func totalCountPublisher(type: NEAssetType? = nil) -> AnyPublisher<Int, Never> {
-        didUpdatePublisher
-            .flatMap { nest -> AnyPublisher<Int?, Never> in
-                let publisher = Future<Int?, Never> { promise in
-                    let wrapper = FutureResultWrapper<Int?, Never>(promise)
-                    Task {
-                        do {
-                            let count = try await nest.fetchCount(type: type)
-                            wrapper.promise(.success(count))
-                        } catch {
-                            wrapper.promise(.success(nil))
-                        }
+        Publishers.MergeMany(
+            Just(self).eraseToAnyPublisher(),
+            didUpdatePublisher.eraseToAnyPublisher()
+        ).flatMap { nest -> AnyPublisher<Int?, Never> in
+            let publisher = Future<Int?, Never> { promise in
+                let wrapper = FutureResultWrapper<Int?, Never>(promise)
+                Task {
+                    do {
+                        let count = try await nest.fetchCount(type: type)
+                        wrapper.promise(.success(count))
+                    } catch {
+                        wrapper.promise(.success(nil))
                     }
                 }
-                return publisher.eraseToAnyPublisher()
             }
-            .compactMap { $0 }
-            .eraseToAnyPublisher()
+            return publisher.eraseToAnyPublisher()
+        }
+        .compactMap { $0 }
+        .eraseToAnyPublisher()
     }
 }
 
