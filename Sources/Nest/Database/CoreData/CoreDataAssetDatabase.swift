@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Combine
 import CoreData
 
 class CoreDataAssetDatabase: NestDatabase {
@@ -56,7 +57,7 @@ class CoreDataAssetDatabase: NestDatabase {
     }
 
     func fetch(byId id: String) async throws -> NEAsset? {
-        return try await persistentContainer.performBackgroundTask { context in
+        try await persistentContainer.performBackgroundTask { context in
             guard let coreDataAsset = try self.fetchAsset(byId: id, context: context) else {
                 return nil
             }
@@ -111,6 +112,54 @@ class CoreDataAssetDatabase: NestDatabase {
             }
         }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+
+    // MARK: - Private Methods
+
+    // Publisher for database updates
+    private let updateSubject = PassthroughSubject<Void, Never>()
+
+    func fetchCount(type: NEAssetType?) async throws -> Int {
+        try await persistentContainer.performBackgroundTask { context in
+            let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Asset")
+            fetchRequest.resultType = .countResultType
+            fetchRequest.predicate = type.map { NSPredicate(format: "type == %@", $0.stringValue) }
+            let count = try context.count(for: fetchRequest)
+            return count
+        }
+    }
+
+    var didUpdatePublisher: AnyPublisher<NestDatabase, Never> {
+        updateSubject
+            .compactMap { [weak self] in
+                guard let self else { return nil }
+                return self
+            }
+            .eraseToAnyPublisher()
+    }
+
+    private var subscriptions: Set<AnyCancellable> = Set()
+
+    private func installBindings() {
+        let notificationCenter = NotificationCenter.default
+        let savePublisher = notificationCenter.publisher(
+            for: NSManagedObjectContext.didSaveObjectIDsNotification,
+            object: viewContext
+        )
+        let changePublisher = notificationCenter.publisher(
+            for: NSManagedObjectContext.didChangeObjectsNotification,
+            object: viewContext
+        )
+        let mergePublisher = notificationCenter.publisher(
+            for: NSManagedObjectContext.didMergeChangesObjectIDsNotification,
+            object: viewContext
+        )
+        Publishers
+            .MergeMany(savePublisher, changePublisher, mergePublisher)
+            .map { _ in () }
+            .throttle(for: .milliseconds(300), scheduler: RunLoop.main, latest: true)
+            .subscribe(updateSubject)
+            .store(in: &subscriptions)
     }
 }
 

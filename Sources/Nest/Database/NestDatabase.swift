@@ -5,6 +5,8 @@
 //  Created by Jim Wang on 2025/1/5.
 //
 
+import Combine
+
 public struct QueryFilter {
     public let field: String
     public let value: Any
@@ -60,6 +62,16 @@ public protocol NestDatabase {
 
     // Delete all
     func deleteAll() async throws
+
+    /// Asynchronously retrieves the total count of items in the database
+    /// - Returns: The total number of items stored in the database
+    /// - Throws: Database errors that might occur during the counting operation
+    func fetchCount(type: NEAssetType?) async throws -> Int
+
+    // MARK: - Publisher
+
+    /// Publisher that emits when the database content has been updated
+    var didUpdatePublisher: AnyPublisher<NestDatabase, Never> { get }
 }
 
 extension NestDatabase {
