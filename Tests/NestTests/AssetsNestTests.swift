@@ -40,6 +40,10 @@ func testFetchAssets() async throws {
     #expect(try! await nest.fetchCount(type: .photo) == 20)
     #expect(try! await nest.fetchCount(type: .video) == 10)
     #expect(try! await nest.fetchCount(type: .custom("sticker")) == 5)
+    #expect(try! await nest.fetchCount(types: [.photo, .video]) == 20 + 10)
+    #expect(try! await nest.fetchCount(types: [.photo, .custom("sticker")]) == 20 + 5)
+    #expect(try! await nest.fetchCount(types: [.photo, .custom("???")]) == 20)
+    #expect(try! await nest.fetchCount(types: nil) == 20 + 10 + 5)
     #expect(try! await nest.fetchCount() == 20 + 10 + 5)
 }
 

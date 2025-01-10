@@ -214,11 +214,20 @@ public class AssetsNest: @unchecked Sendable {
         try await database.fetch(limit: limit, offset: offset, type: type, ascending: ascending)
     }
 
-    /// Asynchronously retrieves the total count of items in the database
-    /// - Returns: The total number of items stored in the database
-    /// - Throws: Database errors that might occur during the counting operation
-    public func fetchCount(type: NEAssetType? = nil) async throws -> Int {
+    /// Fetches the count of items for a specific type from the database.
+    /// - Parameter type: The specific `NEAssetType` to count.
+    /// - Returns: The total number of items matching the given type.
+    /// - Throws: An error if the database operation fails.
+    public func fetchCount(type: NEAssetType) async throws -> Int {
         try await database.fetchCount(type: type)
+    }
+
+    /// Fetches the count of items for a list of types or all items if no types are provided.
+    /// - Parameter types: An optional array of `NEAssetType` to filter the count. If `nil`, counts all items.
+    /// - Returns: The total number of items matching the specified types or all items if no types are provided.
+    /// - Throws: An error if the database operation fails.
+    public func fetchCount(types: [NEAssetType]? = nil) async throws -> Int {
+        try await database.fetchCount(types: types)
     }
 
     // MARK: - Publishers
@@ -234,7 +243,7 @@ public class AssetsNest: @unchecked Sendable {
             .eraseToAnyPublisher()
     }
 
-    public func totalCountPublisher(type: NEAssetType? = nil) -> AnyPublisher<Int, Never> {
+    public func totalCountPublisher(types: [NEAssetType]? = nil) -> AnyPublisher<Int, Never> {
         Publishers.MergeMany(
             Just(self).eraseToAnyPublisher(),
             didUpdatePublisher.eraseToAnyPublisher()
@@ -243,7 +252,7 @@ public class AssetsNest: @unchecked Sendable {
                 let wrapper = FutureResultWrapper<Int?, Never>(promise)
                 Task {
                     do {
-                        let count = try await nest.fetchCount(type: type)
+                        let count = try await nest.fetchCount(types: types)
                         wrapper.promise(.success(count))
                     } catch {
                         wrapper.promise(.success(nil))

@@ -63,10 +63,10 @@ public protocol NestDatabase {
     // Delete all
     func deleteAll() async throws
 
-    /// Asynchronously retrieves the total count of items in the database
-    /// - Returns: The total number of items stored in the database
-    /// - Throws: Database errors that might occur during the counting operation
-    func fetchCount(type: NEAssetType?) async throws -> Int
+    /// Retrieves the total count of items in the database, optionally filtered by specific types.
+    /// - Parameter types: An optional array of `NEAssetType` to filter the count. If `nil`, counts all items.
+    /// - Returns: The total number of items matching the specified types, or all items if no types are provided.
+    func fetchCount(types: [NEAssetType]?) async throws -> Int
 
     // MARK: - Publisher
 
@@ -98,6 +98,10 @@ extension NestDatabase {
 
     func fetchAll(type: NEAssetType?, ascending: Bool) async throws -> [NEAsset] {
         try await fetchAll(filters: createQueryFilters(type: type) ?? [], ascending: ascending)
+    }
+
+    func fetchCount(type: NEAssetType) async throws -> Int {
+        try await fetchCount(types: [type])
     }
 
     private func createQueryFilters(type: NEAssetType?) -> [QueryFilter]? {

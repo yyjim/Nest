@@ -56,11 +56,11 @@ final class MockDatabase: NestDatabase {
         storedAssets = [:]
     }
 
-    func fetchCount(type: NEAssetType?) async throws -> Int {
-        if type == nil {
+    func fetchCount(types: [NEAssetType]?) async throws -> Int {
+        guard let types else {
             return storedAssets.count
         }
-        return storedAssets.values.filter {  $0.type == type }.count
+        return storedAssets.values.filter { types.contains($0.type) }.count
     }
 
     var didUpdatePublisher: AnyPublisher<NestDatabase, Never> {

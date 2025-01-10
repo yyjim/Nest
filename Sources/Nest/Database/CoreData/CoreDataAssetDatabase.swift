@@ -78,7 +78,7 @@ class CoreDataAssetDatabase: NestDatabase {
     }
 
     func fetch(limit: Int, offset: Int, filters: [QueryFilter], ascending: Bool) async throws -> [NEAsset] {
-        let predicate = createCompoundPredicate(from: filters)
+        let predicate = createCompoundPredicate(from: filters, logicalOperator: .or)
         return try await persistentContainer.performBackgroundTask { context in
             let request: NSFetchRequest<Asset> = Asset.fetchRequest()
             request.fetchLimit = limit
@@ -99,8 +99,12 @@ class CoreDataAssetDatabase: NestDatabase {
         }
     }
 
-    private func createCompoundPredicate(from filters: [QueryFilter]) -> NSPredicate? {
-        guard !filters.isEmpty else { return nil }
+    private func createCompoundPredicate(
+        from filters: [QueryFilter]?,
+        logicalOperator: NSCompoundPredicate.LogicalType
+    ) -> NSPredicate? {
+        guard let filters, !filters.isEmpty else { return nil }
+
         let predicates = filters.map { filter -> NSPredicate in
             switch filter.comparison {
             case .equal:
@@ -113,22 +117,37 @@ class CoreDataAssetDatabase: NestDatabase {
                 return NSPredicate(format: "%K CONTAINS %@", filter.field, filter.value as! CVarArg)
             }
         }
-        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-    }
 
+        switch logicalOperator {
+        case .not:
+            return nil
+        case .and:
+            return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        case .or:
+            return NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+        @unknown default:
+            return nil
+        }
+    }
     // MARK: - Private Methods
 
     // Publisher for database updates
     private let updateSubject = PassthroughSubject<Void, Never>()
 
-    func fetchCount(type: NEAssetType?) async throws -> Int {
-        try await persistentContainer.performBackgroundTask { context in
+    func fetchCount(types: [NEAssetType]?) async throws -> Int {
+        let predicate = createCompoundPredicate(from: createQueryFilters(types: types), logicalOperator: .or)
+        return try await persistentContainer.performBackgroundTask { context in
             let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "Asset")
             fetchRequest.resultType = .countResultType
-            fetchRequest.predicate = type.map { NSPredicate(format: "type == %@", $0.stringValue) }
+            fetchRequest.predicate = predicate
             let count = try context.count(for: fetchRequest)
             return count
         }
+    }
+
+    private func createQueryFilters(types: [NEAssetType]?) -> [QueryFilter]? {
+        guard let types else { return nil }
+        return types.map { QueryFilter(field: "type", value: $0.stringValue, comparison: .equal) }
     }
 
     var didUpdatePublisher: AnyPublisher<NestDatabase, Never> {
