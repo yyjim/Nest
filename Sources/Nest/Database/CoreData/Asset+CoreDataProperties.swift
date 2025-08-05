@@ -16,11 +16,11 @@ extension Asset {
         return NSFetchRequest<Asset>(entityName: "Asset")
     }
 
-    @NSManaged public var createdAt: Date?
+    @NSManaged public var createdAt: Date!
     @NSManaged public var fileSize: Int64
-    @NSManaged public var id: String?
+    @NSManaged public var id: String!
     @NSManaged public var metadata: String?
     @NSManaged public var modifiedAt: Date?
-    @NSManaged public var type: String?
+    @NSManaged public var type: String!
 
 }
